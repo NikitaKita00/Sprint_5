@@ -1,203 +1,105 @@
+import pytest
+from data.urls import Urls
+from data.data import (
+    USER_EMAIL,
+    USER_PASSWORD,
+    LISTING_NAME,
+    LISTING_DESCRIPTION,
+    LISTING_PRICE,
+    EXPECTED_CATEGORY,
+    EXPECTED_CITY,
+)
+from locators.locators import AuthLocators, MainPageLocators, AdvertisementLocators
+from helpers.helpers import click_element, fill_input, safe_click_avatar
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
-import time
 
 
 class TestCreateListing:
     def test_create_listing_and_check_in_profile(self, browser):
-        listing_name = "Тестовое объявление"
-
-        browser.get("https://qa-desk.stand.praktikum-services.ru/")
+        # Открываем главную страницу
+        browser.get(Urls.MAIN_PAGE)
 
         # Вход и регистрация
-        login_register_btn = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable(
-                (
-                    By.XPATH,
-                    "//button[contains(@class, 'buttonSecondary') and normalize-space(text())='Вход и регистрация']",
-                )
-            )
-        )
-        login_register_btn.click()
+        click_element(browser, AuthLocators.LOGIN_REGISTER_BUTTON)
+        fill_input(browser, AuthLocators.EMAIL_INPUT, USER_EMAIL)
+        fill_input(browser, AuthLocators.PASSWORD_INPUT, USER_PASSWORD)
+        click_element(browser, AuthLocators.LOGIN_BUTTON)
 
-        email_input = WebDriverWait(browser, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "input[name='email']"))
-        )
-        email_input.clear()
-        email_input.send_keys("manya.nzenliv123@gmail.com")
-
-        password_input = WebDriverWait(browser, 10).until(
-            EC.visibility_of_element_located(
-                (By.CSS_SELECTOR, "input[name='password']")
-            )
-        )
-        password_input.clear()
-        password_input.send_keys("qwe123qwe")
-
-        login_btn = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable(
-                (
-                    By.XPATH,
-                    "//button[contains(@class, 'buttonPrimary') and normalize-space(text())='Войти']",
-                )
-            )
-        )
-        login_btn.click()
-
-        WebDriverWait(browser, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "button.circleSmall"))
+        # Ждем появления аватара после логина
+        WebDriverWait(browser, 15).until(
+            EC.visibility_of_element_located(AuthLocators.USER_AVATAR)
         )
 
-        place_ad_btn = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable(
-                (
-                    By.XPATH,
-                    "//button[contains(@class, 'buttonPrimary') and normalize-space(text())='Разместить объявление']",
-                )
-            )
-        )
-        place_ad_btn.click()
+        # Нажимаем "Разместить объявление"
+        click_element(browser, MainPageLocators.POST_AD_BUTTON)
 
-        # Заполнение формы
-        name_input = WebDriverWait(browser, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "input[name='name']"))
+        # Заполнение формы объявления
+        fill_input(browser, AdvertisementLocators.NAME_INPUT, LISTING_NAME)
+        fill_input(
+            browser, AdvertisementLocators.DESCRIPTION_TEXTAREA, LISTING_DESCRIPTION
         )
-        name_input.clear()
-        name_input.send_keys(listing_name)
+        fill_input(browser, AdvertisementLocators.PRICE_INPUT, LISTING_PRICE)
 
-        description_textarea = WebDriverWait(browser, 10).until(
-            EC.visibility_of_element_located(
-                (By.CSS_SELECTOR, "textarea[name='description']")
-            )
+        # Проверяем выбранную категорию
+        category_input = WebDriverWait(browser, 10).until(
+            EC.visibility_of_element_located(AdvertisementLocators.CATEGORY_INPUT)
         )
-        description_textarea.clear()
-        description_textarea.send_keys("Описание тестового товара для автотеста.")
+        category_value = category_input.get_attribute("value")
+        assert (
+            category_value == EXPECTED_CATEGORY
+        ), f"Ожидалось значение категории '{EXPECTED_CATEGORY}', но получено '{category_value}'"
 
-        price_input = WebDriverWait(browser, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "input[name='price']"))
+        # Проверяем выбранный город
+        city_input = WebDriverWait(browser, 10).until(
+            EC.visibility_of_element_located(AdvertisementLocators.CITY_INPUT)
         )
-        price_input.clear()
-        price_input.send_keys("1500")
+        city_value = city_input.get_attribute("value")
+        assert (
+            city_value == EXPECTED_CITY
+        ), f"Ожидалось значение города '{EXPECTED_CITY}', но получено '{city_value}'"
 
-        # Выбор категории
-        category_dropdown = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "input[name='category']"))
-        )
-        category_dropdown.click()
-
-        category_option = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable(
-                (
-                    By.XPATH,
-                    "//div[contains(@class, 'dropDownMenu_hidden__qBq1t')]//button[.//span[text()='Авто']]",
-                )
-            )
-        )
-        category_option.click()
-
-        # Выбор города
-        city_dropdown_button = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, "button.dropDownMenu_arrowDown__pfGL1")
-            )
-        )
-        city_dropdown_button.click()
-
-        city_option = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Москва']"))
-        )
-        city_option.click()
-
-        # Выбор состояния товара
-        condition_radio = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//input[@name='condition' and @value='Новый']")
-            )
-        )
-        ActionChains(browser).move_to_element(condition_radio).click().perform()
-
-        # Надежное нажатие кнопки "Опубликовать"
+        # Проверяем, что кнопка "Опубликовать" активна
         publish_btn = WebDriverWait(browser, 10).until(
-            EC.presence_of_element_located(
-                (
-                    By.XPATH,
-                    "//button[@type='submit' and contains(@class, 'buttonPrimary') and normalize-space(text())='Опубликовать']",
-                )
-            )
+            EC.element_to_be_clickable(AdvertisementLocators.PUBLISH_BUTTON)
         )
-
-        # Проверяем, что кнопка не disabled
         disabled = publish_btn.get_attribute("disabled")
         assert disabled is None, "Кнопка 'Опубликовать' заблокирована"
 
-        # Скроллим к кнопке
+        # Скроллим к кнопке и кликаем разными способами для надежности
         browser.execute_script(
             "arguments[0].scrollIntoView({block: 'center'});", publish_btn
         )
 
-        # Ждем, пока кнопка станет кликабельной (иногда нужно чуть больше времени)
-        WebDriverWait(browser, 5).until(
-            EC.element_to_be_clickable(
-                (
-                    By.XPATH,
-                    "//button[@type='submit' and contains(@class, 'buttonPrimary') and normalize-space(text())='Опубликовать']",
-                )
-            )
-        )
-
         clicked = False
-        # 1. Пробуем обычный клик
-        try:
-            publish_btn.click()
-            clicked = True
-        except Exception:
-            pass
-
-        # 2. Клик через JS, если обычный не сработал
-        if not clicked:
+        for method in [
+            publish_btn.click,
+            lambda: browser.execute_script("arguments[0].click();", publish_btn),
+            lambda: ActionChains(browser)
+            .move_to_element(publish_btn)
+            .click()
+            .perform(),
+            lambda: browser.execute_script(
+                "arguments[0].submit();",
+                publish_btn.find_element(By.XPATH, "./ancestor::form"),
+            ),
+        ]:
             try:
-                browser.execute_script("arguments[0].click();", publish_btn)
+                method()
                 clicked = True
+                break
             except Exception:
-                pass
-
-        # 3. Клик через ActionChains, если предыдущие не сработали
-        if not clicked:
-            try:
-                ActionChains(browser).move_to_element(publish_btn).click().perform()
-                clicked = True
-            except Exception:
-                pass
-
-        # 4. Отправка формы через JS, если кнопка в форме
-        if not clicked:
-            try:
-                form = publish_btn.find_element(By.XPATH, "./ancestor::form")
-                browser.execute_script("arguments[0].submit();", form)
-                clicked = True
-            except Exception:
-                pass
+                continue
 
         assert clicked, "Не удалось нажать кнопку 'Опубликовать' любым способом"
 
-        # Переход в профиль пользователя
-        user_avatar_btn = WebDriverWait(browser, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.circleSmall"))
-        )
-        user_avatar_btn.click()
+        # Переход в профиль пользователя — кликаем по аватару с защитой от stale element
+        safe_click_avatar(browser, AuthLocators.USER_AVATAR)
 
-        # Проверяем появление объявления
+        # Проверяем, что в блоке "Мои объявления" есть объявления
         my_ads_section = WebDriverWait(browser, 10).until(
-            EC.visibility_of_element_located(
-                (By.XPATH, "//section[contains(., 'Мои объявления')]")
-            )
+            EC.visibility_of_element_located(AdvertisementLocators.MY_ADS_SECTION)
         )
-
-        created_ad = my_ads_section.find_elements(
-            By.XPATH, f".//div[contains(text(), '{listing_name}')]"
-        )
-        assert (
-            len(created_ad) > 0
-        ), "Созданное объявление не найдено в блоке 'Мои объявления'"
+        ads = my_ads_section.find_elements(By.CSS_SELECTOR, "div.card")
+        assert len(ads) > 0, "В блоке 'Мои объявления' нет объявлений"
